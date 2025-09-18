@@ -130,10 +130,132 @@ const deleteExpense = async (req: Request, res: Response) => {
   }
 };
 
+const getLastWeekExpenses = async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    const lastWeek = new Date();
+    lastWeek.setDate(today.getDate() - 7);
+
+    const expenses = await prisma.expenses.findMany({
+      where: {
+        user_id: (req as any).user?.id,
+        date: { gte: lastWeek },
+      },
+    });
+
+    if (expenses.length === 0) {
+      return res.status(200).json({ msg: "You didn’t have any expense in the last 7 days" });
+    }
+
+    return res.status(200).json(expenses);
+  } catch (err) {
+    console.error("Could not get last week expenses: ", err);
+    return res.status(500).json({
+      msg: "Internal server error - could not get last week expenses",
+    });
+  }
+};
+
+const getLastMonthExpenses = async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    const lastMonth = new Date();
+    lastMonth.setDate(today.getDate() - 30);
+
+    const expenses = await prisma.expenses.findMany({
+      where: {
+        user_id: (req as any).user?.id,
+        date: { gte: lastMonth },
+      },
+    });
+
+    if (expenses.length === 0) {
+      return res.status(200).json({ msg: "You didn’t have any expense in the last 30 days" });
+    }
+
+    return res.status(200).json(expenses);
+  } catch (err) {
+    console.error("Could not get last month expenses: ", err);
+    return res.status(500).json({
+      msg: "Internal server error - could not get last month expenses",
+    });
+  }
+};
+
+const getLastQuarterExpenses = async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    const lastQuarter = new Date();
+    lastQuarter.setDate(today.getDate() - 90); // Approximate quarter
+
+    const expenses = await prisma.expenses.findMany({
+      where: {
+        user_id: (req as any).user?.id,
+        date: { gte: lastQuarter },
+      },
+    });
+
+    if (expenses.length === 0) {
+      return res.status(200).json({ msg: "You didn’t have any expense in the last 90 days" });
+    }
+
+    return res.status(200).json(expenses);
+  } catch (err) {
+    console.error("Could not get last quarter expenses: ", err);
+    return res.status(500).json({
+      msg: "Internal server error - could not get last quarter expenses",
+    });
+  }
+};
+
+const getExpensesByDateRange = async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ msg: "Please provide both startDate and endDate in YYYY-MM-DD format" });
+    }
+
+    const start = new Date(startDate as string);
+    const end = new Date(endDate as string);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ msg: "Invalid date format. Use YYYY-MM-DD" });
+    }
+
+    const expenses = await prisma.expenses.findMany({
+      where: {
+        user_id: (req as any).user?.id,
+        date: {
+          gte: start,
+          lte: end,
+        },
+      },
+    });
+
+    if (expenses.length === 0) {
+      return res.status(200).json({ msg: `No expenses found between ${startDate} and ${endDate}` });
+    }
+
+    return res.status(200).json(expenses);
+  } catch (err) {
+    console.error("Error fetching expenses by custom date range:", err);
+    return res.status(500).json({
+      msg: "Internal server error - could not fetch expenses by custom date range",
+    });
+  }
+};
+
+
+
 export {
   addExpense,
   getAllExpenses,
   getSpecificExpense,
   updateExpense,
   deleteExpense,
+  getLastWeekExpenses,
+  getLastMonthExpenses,
+  getLastQuarterExpenses,
+  getExpensesByDateRange
 };
